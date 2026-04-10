@@ -2,6 +2,7 @@
 #define MENU_H
 
 #include "model.h"
+#include "service.h"
 #include <string>
 #include <cstring>
 
@@ -18,6 +19,11 @@ int getUserChoice();
 int findCardIndex(const char *cardNumber);
 void addCard();
 void queryCard();
-void cancelCard();
+void queryStatistics();
+void annul();
+void logon();
+void settle();
+void addMoney();
+void refundMoney();
 
 #endif

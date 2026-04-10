@@ -5,7 +5,6 @@
 #include "card_file.h"
 #include "tool.h"
 #include <cstring>
-
 // 全局链表头指针
 lpCardNode cardList = nullptr;
 
@@ -40,16 +39,20 @@ void releaseCardList()
 // 检查卡号是否已存在
 int isCardExists(const char *cardNumber)
 {
+    if (cardList == nullptr)
+    {
+        return 0;
+    }
     lpCardNode current = cardList->next;
     while (current != nullptr)
     {
         if (strcmp(current->data.aName, cardNumber) == 0 && current->data.nDel == 0)
         {
-            return 1; // 卡号已存在
+            return 1;
         }
         current = current->next;
     }
-    return 0; // 卡号不存在
+    return 0;
 }
 
 // 新增卡
@@ -96,17 +99,23 @@ int addCard(const char *cardNumber, const char *password, float balance)
     }
     current->next = newNode;
 
-    // 保存到文件
-    // 注意：这里需要修改saveCards函数以支持链表
-    // 暂时注释掉
-    // saveCards(cardList);
+    // 保存到文本文件
+    if (saveCard(&newNode->data, CARD_FILE_PATH) != 0)
+    {
+        current->next = nullptr;
+        delete newNode;
+        return -4; // 保存文件失败
+    }
 
     return 0; // 成功
 }
-
 // 精确查询卡
 Card *queryCard(const char *cardNumber)
 {
+    if (cardList == nullptr)
+    {
+        return nullptr;
+    }
     lpCardNode current = cardList->next;
     while (current != nullptr)
     {
@@ -116,13 +125,18 @@ Card *queryCard(const char *cardNumber)
         }
         current = current->next;
     }
-    return nullptr; // 卡不存在
+    return nullptr;
 }
 
 // 模糊查询卡
 Card *queryCards(const char *keyword, int *count)
 {
     *count = 0;
+
+    if (cardList == nullptr)
+    {
+        return nullptr;
+    }
 
     // 第一次遍历，统计匹配数量
     lpCardNode current = cardList->next;
@@ -137,7 +151,7 @@ Card *queryCards(const char *keyword, int *count)
 
     if (*count == 0)
     {
-        return nullptr; // 没有匹配的卡
+        return nullptr;
     }
 
     // 第二次遍历，收集匹配的卡
@@ -145,7 +159,7 @@ Card *queryCards(const char *keyword, int *count)
     if (result == nullptr)
     {
         *count = 0;
-        return nullptr; // 内存分配失败
+        return nullptr;
     }
 
     int index = 0;
@@ -165,6 +179,10 @@ Card *queryCards(const char *keyword, int *count)
 // 注销卡
 int cancelCard(const char *cardNumber)
 {
+    if (cardList == nullptr)
+    {
+        return -1;
+    }
     lpCardNode current = cardList->next;
     while (current != nullptr)
     {
@@ -173,20 +191,72 @@ int cancelCard(const char *cardNumber)
             // 检查卡状态
             if (current->data.nStatus == CARD_STATUS_IN_USE)
             {
-                return -2; // 卡正在使用中，无法注销
+                return -2;
             }
+
+            int oldStatus = current->data.nStatus;
 
             // 注销卡
             current->data.nStatus = CARD_STATUS_CANCELLED;
 
             // 保存到文件
-            // 暂时注释掉
-            // saveCards(cardList);
+            if (updateCard(&current->data, CARD_FILE_PATH) != 0)
+            {
+                current->data.nStatus = oldStatus;
+                return -3;
+            }
 
-            return 0; // 成功
+            return 0;
         }
         current = current->next;
     }
 
-    return -1; // 卡不存在
+    return -1;
+}
+
+// 验证卡号密码
+Card *checkCard(const char *cardNumber, const char *password)
+{
+    if (cardList == nullptr || cardList->next == nullptr)
+    {
+        return nullptr;
+    }
+
+    lpCardNode current = cardList->next;
+    while (current != nullptr)
+    {
+        if (strcmp(current->data.aName, cardNumber) == 0 &&
+            strcmp(current->data.aPwd, password) == 0 &&
+            current->data.nDel == 0)
+        {
+            return &(current->data);
+        }
+        current = current->next;
+    }
+
+    return nullptr;
+}
+
+// 更新卡信息
+int updateCard(Card *card)
+{
+    if (card == nullptr || cardList == nullptr || cardList->next == nullptr)
+    {
+        return -1;
+    }
+
+    lpCardNode current = cardList->next;
+    while (current != nullptr)
+    {
+        if (strcmp(current->data.aName, card->aName) == 0 &&
+            current->data.nDel == 0)
+        {
+            // 更新卡信息
+            current->data = *card;
+            return 0;
+        }
+        current = current->next;
+    }
+
+    return -1;
 }

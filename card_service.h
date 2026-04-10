@@ -15,5 +15,7 @@ int addCard(const char *cardNumber, const char *password, float balance);
 Card *queryCard(const char *cardNumber);
 Card *queryCards(const char *keyword, int *count);
 int cancelCard(const char *cardNumber);
+Card *checkCard(const char *cardNumber, const char *password);
+int updateCard(Card *card);
 
 #endif // CARD_SERVICE_H
